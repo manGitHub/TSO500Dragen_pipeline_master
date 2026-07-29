@@ -25,7 +25,7 @@ process DEMUX {
     """
     set -euo pipefail
 
-    demux_run_outdir="${demux_outdir}/${run_name}-Demux"
+    demux_run_outdir="${demux_outdir}/${run_name}"
     fq_gen="\${demux_run_outdir}/Logs_Intermediates/FastqGeneration"
 
     # ── SAMPLESHEET ────────────────────────────────────────────────────────────
