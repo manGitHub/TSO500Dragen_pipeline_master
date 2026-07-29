@@ -81,8 +81,6 @@ process DEMUX {
     touch "fastqs_ready.flag"
 
     # ── PERMISSIONS ────────────────────────────────────────────────────────────
-    chgrp Compass "${fastq_outdir}"
-    chmod g+rx "${fastq_outdir}"
     while IFS= read -r sample_id || [[ -n "\${sample_id}" ]]; do
         [[ -n "\${sample_id}" ]] || continue
         sample_dir="${fastq_outdir}/\${sample_id}"
