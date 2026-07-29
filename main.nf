@@ -200,7 +200,7 @@ workflow.onComplete {
                      ? """\
 ${metricsTable}
 
-TSO500 pipeline ${tso500Ver}, workflow version ${workflowVer} completed successfully.
+TSO500 DRAGEN pipeline ${tso500Ver}, workflow version ${workflowVer} completed successfully.
 """.stripIndent()
                      : """\
 Pipeline FAILED for run: ${run_name}
