@@ -82,7 +82,7 @@ All parameters are set in `nextflow.config` and can be overridden on the command
 | `run_folder`         | *(required)*                                 | Sequencing run folder name                       |
 | `run_base`           | `/data/Compass/NextSeq_raw`                  | Root directory containing run folders            |
 | `fastq_outdir`       | `…/FastqFolder`                              | Destination for demuxed FASTQs                   |
-| `demux_outdir`       | `…/TSO500_v2_Demux`                          | Destination for DRAGEN demux output              |
+| `demux_outdir`       | `…/TSO500_DRAGEN_Demux`                          | Destination for DRAGEN demux output              |
 | `tso_outdir`         | `…/TSO500_Results`                           | Destination for TSO500 per-sample results        |
 | `dragen_bin`         | `/opt/dragen/3.11.2/bin`                     | Path to DRAGEN binaries                          |
 | `email_from`         | `$USER@nih.gov`                              | Sender address for pipeline notifications        |
