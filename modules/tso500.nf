@@ -15,6 +15,7 @@ process TSO500 {
     def tso500_ver = workflow.manifest.version
     def run_name   = params.run_folder
     def ss         = "${params.run_base}/${run_name}/SampleSheet.csv"
+    def sample_fastq_dir = "${fastq_outdir}/${sample_id}"
 
     """
     set -euo pipefail
@@ -32,7 +33,7 @@ process TSO500 {
         DRAGEN_TSO500-${tso500_ver}.sh \
             --engine singularity \
             --analysisFolder "\${analysis}" \
-            --fastqFolder    "${fastq_outdir}" \
+            --fastqFolder    "${sample_fastq_dir}" \
             --sampleSheet    "${ss}" \
             --sampleOrPairIDs "${pair_id}" \
         2>&1
