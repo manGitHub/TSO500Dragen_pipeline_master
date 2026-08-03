@@ -80,15 +80,9 @@ workflow.onComplete {
     // ["bash", "-lc", cleanup_cmd].execute().waitFor()
 
     // update permissions for tso output
-    if (!workflow.stubRun) {
-        // update permissions for tso output
-        ["bash", "-c", """
-            chgrp -R Compass ${params.tso_outdir} && chmod -R g+rw ${params.tso_outdir}
-        """].execute().waitFor()
-    }
 
     // ── Build per-sample metrics table from [Analysis Status] in each MetricsOutput.tsv ──
-    def metadataDir  = "${projectDir}/metadata/${run_name}"
+    def metadataDir  = "${params.launch_dir}/metadata/${run_name}"
     def qcOutDir     = "${params.tso_outdir}/run_qc"
     def tableOutPath = "${qcOutDir}/${run_name}_app_complete.txt"
     new File(metadataDir).mkdirs()
@@ -101,6 +95,19 @@ workflow.onComplete {
     def sampleIds = new File("${metadataDir}/sample_ids.txt").exists()
         ? new File("${metadataDir}/sample_ids.txt").text.trim()
         : ""
+
+    // update permissions for tso output — scoped to this run's samples only
+    if (!workflow.stubRun) {
+        pairIds.split("\n").each { pair_id ->
+            pair_id = pair_id.trim()
+            if (pair_id) {
+                def sampleOutDir = "${params.tso_outdir}/${pair_id}"
+                ["bash", "-c", """
+                    chgrp -R Compass ${sampleOutDir} && chmod -R g+rw ${sampleOutDir}
+                """].execute().waitFor()
+            }
+        }
+    }
 
     // ── Drop a .done file into each sample's directory ────────────────────────
     pairIds.split("\n").each { pair_id ->
@@ -146,7 +153,7 @@ workflow.onComplete {
         new File("${params.tso_outdir}/${sample_id.trim()}_NoPair/Results/MetricsOutput.tsv")
     }.findAll { it.exists() }.collect { it.absolutePath }
 
-    def demuxRunDir = "${params.demux_outdir}/${run_name}-Demux"
+    def demuxRunDir = "${params.demux_outdir}/${run_name}"
 	// get demux run qc
     def runQcJson = new File("${demuxRunDir}/Logs_Intermediates/RunQc/RunQCMetrics.json").exists()
         ? "${demuxRunDir}/Logs_Intermediates/RunQc/RunQCMetrics.json"

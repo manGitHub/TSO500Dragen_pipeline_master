@@ -6,22 +6,19 @@
 #SBATCH --partition=norm
 #SBATCH --time=12:00:00
 set -euo pipefail
-
 PIPELINE_DIR="${1:?PIPELINE_DIR not set}"
-RUNFOLDER="${2:?Usage: bash run.sh <RUNFOLDER>}"
-shift 2
+LAUNCH_DIR="${2:?LAUNCH_DIR not set}"
+RUNFOLDER="${3:?Usage: bash run.sh <RUNFOLDER>}"
+shift 3
 EXTRA_ARGS=("$@")
-
 # ── Per-run work directory (avoids collisions when running two runs at once) ──
-WORK_DIR="${PIPELINE_DIR}/work/${RUNFOLDER}"
+WORK_DIR="${LAUNCH_DIR}/work/${RUNFOLDER}"
 mkdir -p "${WORK_DIR}"
 cd "${WORK_DIR}"
-
 # ── Profile / stub handling ───────────────────────────────────────────────────
 STUB_FLAG=""
 PROFILE="biowulf"
 FILTERED_ARGS=()
-
 skip_next=false
 for arg in "${EXTRA_ARGS[@]:-}"; do
     if ${skip_next}; then
@@ -38,15 +35,14 @@ for arg in "${EXTRA_ARGS[@]:-}"; do
     fi
 done
 EXTRA_ARGS=("${FILTERED_ARGS[@]}")
-
 module load nextflow/25.10.2
 module load singularity
-
 nextflow run "${PIPELINE_DIR}/main.nf" \
     -profile "${PROFILE}" \
     -resume \
     -work-dir "${WORK_DIR}" \
     ${STUB_FLAG} \
     --run_folder "${RUNFOLDER}" \
+    --launch_dir "${LAUNCH_DIR}" \
     "${EXTRA_ARGS[@]}" \
     2>&1

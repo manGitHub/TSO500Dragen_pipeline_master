@@ -14,7 +14,7 @@ process DEMUX {
     path "pair_ids.txt",     emit: pair_ids
     path "fastqs_ready.flag", emit: fastqs_ready
 
-    publishDir "${projectDir}/metadata/${params.run_folder}", mode: 'copy',
+    publishDir "${params.launch_dir}/metadata/${params.run_folder}", mode: 'copy',
         saveAs: { filename -> filename in ["sample_ids.txt", "pair_ids.txt"] ? filename : null }
 
     script:
@@ -29,7 +29,7 @@ process DEMUX {
     fq_gen="\${demux_run_outdir}/Logs_Intermediates/FastqGeneration"
 
     # ── SAMPLESHEET ────────────────────────────────────────────────────────────
-    python3 "${samplesheet_script}" "${sample_sheet}" "${projectDir}/metadata/${params.run_folder}"
+    python3 "${samplesheet_script}" "${sample_sheet}" "${params.launch_dir}/metadata/${params.run_folder}"
 
     # ── DRAGEN_DEMUX ───────────────────────────────────────────────────────────
     export PATH="${params.dragen_bin}:\$PATH"
