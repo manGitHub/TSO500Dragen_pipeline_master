@@ -91,6 +91,9 @@ process DEMUX {
             echo "WARNING: sample dir not found: \${sample_dir}"
         fi
     done < "sample_ids.txt"
+
+    chgrp -R Compass "\${demux_run_outdir}"
+    chmod -R g+rw "\${demux_run_outdir}"
     """
 
     stub:

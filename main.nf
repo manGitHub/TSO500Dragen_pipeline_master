@@ -90,7 +90,7 @@ workflow.onComplete {
 
     // ── Build per-sample metrics table from [Analysis Status] in each MetricsOutput.tsv ──
     def metadataDir  = "${params.launch_dir}/metadata/${run_name}"
-    def qcOutDir     = "${params.tso_outdir}/run_qc"
+    def qcOutDir     = "${params.tso_outdir}/Dragen_run_qc"
     def tableOutPath = "${qcOutDir}/${run_name}_app_complete.txt"
     new File(metadataDir).mkdirs()
     new File(qcOutDir).mkdirs()
