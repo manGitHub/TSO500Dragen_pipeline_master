@@ -24,7 +24,14 @@ workflow {
         from:    params.email_from,
         to:      params.email_to,
         subject: "[START] TSO500.${pipelineVersion} Pipeline: ${params.run_folder}",
-        body:    "Pipeline started for run: ${params.run_folder}"
+        body:    """\
+	Pipeline started for run: ${params.run_folder}
+
+	Launch directory: ${params.launch_dir}
+	Fastq directory: ${params.fastq_outdir}
+	Demux directory: ${params.demux_outdir}
+	TSO output directory: ${params.tso_outdir}
+	""".stripIndent()
     )
 
     DEMUX(

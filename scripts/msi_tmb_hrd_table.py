@@ -24,6 +24,7 @@ except ImportError:
 TMB_GLOB = "Logs_Intermediates/Tmb/{sample}/{sample}.tmb.metrics.csv"
 MSI_GLOB = "Results/{pair_id}/{sample}/{sample}.microsat_output.json"
 HRD_GLOB = "Results/{pair_id}/{sample}/{sample}.gis.json"
+SAR_GLOB = "Logs_Intermediates/SampleAnalysisResults/{pair_id}_SampleAnalysisResults.json"
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -79,8 +80,27 @@ def read_hrd(pair_dir: Path, sample_id: str, pair_id: str) -> str:
     except (TypeError, ValueError):
         return str(val)
 
+def read_tumor_purity(pair_dir: Path, sample_id: str, pair_id: str) -> str:
+    path = pair_dir / SAR_GLOB.format(pair_id=pair_id)
+    if not path.exists():
+        return "N/A"
+    with path.open() as fh:
+        data = json.load(fh)
+    gis_block = data.get("data", {}).get("biomarkers", {}).get("genomicInstabilityScore", {})
+    val = "N/A"
+    for metric in gis_block.get("additionalMetrics", []):
+        if metric.get("name") == "TumorFraction":
+            purity_val = metric.get("value")
+            if purity_val is not None:
+                val = purity_val
+            break
+    try:
+        return str(round(float(val), 2))
+    except (TypeError, ValueError):
+        return str(val)
 
-def write_excel(sample_ids, msi_vals, tmb_vals, hrd_vals, out_path: Path):
+
+def write_excel(sample_ids, msi_vals, tmb_vals, hrd_vals, purity_vals, out_path: Path):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "MSI_TMB"
@@ -100,6 +120,12 @@ def write_excel(sample_ids, msi_vals, tmb_vals, hrd_vals, out_path: Path):
     ws.append([""] + sample_ids)
     # Row 8: HRD values
     ws.append(["HRD"] + hrd_vals)
+    # Row 9: spacer
+    ws.append([])
+    # Row 10: TumorPurity header
+    ws.append([""] + sample_ids)
+    # Row 11: TumorPurity values
+    ws.append(["tumorPurity"] + purity_vals)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out_path)
     print(f"Wrote: {out_path}")
@@ -113,16 +139,17 @@ def main():
     samples = load_samples(args.samples)
     if not samples:
         sys.exit(f"ERROR: No samples found under {tso}")
-    sample_ids, msi_vals, tmb_vals, hrd_vals = [], [], [], []
+    sample_ids, msi_vals, tmb_vals, hrd_vals, purity_vals = [], [], [], [], []
     for pair_id, sample_id in samples:
         pair_dir = tso / pair_id
         sample_ids.append(sample_id)
         msi_vals.append(read_msi(pair_dir, sample_id, pair_id))
         tmb_vals.append(read_tmb(pair_dir, sample_id))
         hrd_vals.append(read_hrd(pair_dir, sample_id, pair_id))
-        print(f"  {sample_id}: MSI={msi_vals[-1]}  TMB={tmb_vals[-1]}  HRD={hrd_vals[-1]}")
+        purity_vals.append(read_tumor_purity(pair_dir, sample_id, pair_id))
+        print(f"  {sample_id}: MSI={msi_vals[-1]}  TMB={tmb_vals[-1]}  HRD={hrd_vals[-1]}  TumorPurity={purity_vals[-1]}")
     xlsx_name = f"MSI_TMB_HRD_{args.run_folder}.xlsx"
-    write_excel(sample_ids, msi_vals, tmb_vals, hrd_vals, outdir / xlsx_name)
+    write_excel(sample_ids, msi_vals, tmb_vals, hrd_vals, purity_vals, outdir / xlsx_name)
 
 if __name__ == "__main__":
     main()
