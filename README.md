@@ -64,6 +64,17 @@ NextFlow/
 
 The run folder name must match a directory under `params.run_base` (default: `/data/Compass/NextSeq_raw`).
 
+### Running in your own directory
+
+To run the pipeline with output directed to your own working directory instead of the shared default locations, override `--tso_outdir`, `--fastq_outdir`, and `--demux_outdir` on the command line:
+
+```bash
+/path/to/run.sh 260219_NDX550200_0530_AH7J7NBGYX \
+  --tso_outdir /path/to/TSO_Results \
+  --fastq_outdir /path/to/FastqFolder \
+  --demux_outdir /path/to/TSO500_v2_Demux
+```
+
 The pipeline always runs with `-resume` enabled, so re-submitting the same run folder will pick up from cached work where possible.
 
 ### Stub / dry run
