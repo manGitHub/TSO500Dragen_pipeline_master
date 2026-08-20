@@ -1,0 +1,6 @@
+name: vaf_scatter
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - bokeh=3.9

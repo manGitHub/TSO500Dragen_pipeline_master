@@ -11,10 +11,12 @@ if (!params.run_folder) {
 include { DEMUX   } from './modules/demux'
 include { TSO500  } from './modules/tso500'
 include { QCI_ZIP } from './modules/qci_zip'
+include { VAF_SCATTER_HTML } from './modules/vaf_scatter'
 
 // ── Shared paths/values ───────────────────────────────────────────────────────
 def pipelineVersion = workflow.manifest.version
 def runDir             = "${params.run_base}/${params.run_folder}"
+def vafScatterScript = params.vaf_scatter_script
 
 
 // ── Workflow ──────────────────────────────────────────────────────────────────
@@ -51,6 +53,15 @@ workflow {
         sample_ch,						// each sample tuple and pipeline dirs
         channel.value(params.fastq_outdir),
         channel.value(params.tso_outdir)
+    )
+
+    VAF_SCATTER_HTML(
+        TSO500.out.tso_output
+            .map { sample_id, tso_dir ->
+                def pair_id = tso_dir.tokenize('/').last()
+                tuple(sample_id, pair_id, tso_dir)
+            },
+        channel.value(vafScatterScript)
     )
 
     QCI_ZIP(
