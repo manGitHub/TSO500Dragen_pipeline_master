@@ -140,6 +140,17 @@ All parameters are set in `nextflow.config` and can be overridden on the command
 
 Nextflow timeline, report, and trace files are written here for each run. Stub-mode incomplete-sample logs are written under `pipeline_info/stubs/`.
 
+Trace files (for both stub and regular runs) are named `<run>_<timestamp>_trace.txt` and can be found at:
+
+```
+…/pipeline_info/<run>_<timestamp>_trace.txt
+```
+
+**Example:**
+```
+…/work/260219_NDX550200_0530_AH7J7NBGYX/pipeline_info/260219_NDX550200_0530_AH7J7NBGYX_20260821_164015_trace.txt
+```
+
 ---
 
 ## Profiles
