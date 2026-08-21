@@ -46,3 +46,13 @@ nextflow run "${PIPELINE_DIR}/main.nf" \
     --launch_dir "${LAUNCH_DIR}" \
     "${EXTRA_ARGS[@]}" \
     2>&1
+
+# ── Permissions: work, metadata, and logs dirs ────────────────────────────────
+chmod g+rw "${LAUNCH_DIR}/work" "${LAUNCH_DIR}/metadata" "${LAUNCH_DIR}/logs"
+
+THIS_LOG="$(ls "${LAUNCH_DIR}/logs/"*"_${SLURM_JOB_ID}.${RUNFOLDER}."*.log 2>/dev/null | head -n1)"
+if [[ -n "${THIS_LOG}" ]]; then
+    chmod g+rw "${THIS_LOG}"
+else
+    echo "WARNING: could not locate log file for job ${SLURM_JOB_ID} / run ${RUNFOLDER}" >&2
+fi

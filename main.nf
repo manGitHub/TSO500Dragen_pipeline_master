@@ -127,6 +127,13 @@ workflow.onComplete {
         }
     }
 
+    // ── Permissions: this run's work dir and metadata dir, recursively ───────────
+    def runWorkDir     = "${params.launch_dir}/work/${run_name}"
+    def runMetadataDir = "${params.launch_dir}/metadata/${run_name}"
+    ["bash", "-c", """
+        chmod -R g+rw "${runWorkDir}" "${runMetadataDir}"
+    """].execute().waitFor()
+
     // ── Drop a .done file into each sample's directory ────────────────────────
     pairIds.split("\n").each { pair_id ->
         pair_id = pair_id.trim()
