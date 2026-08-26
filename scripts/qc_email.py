@@ -71,6 +71,8 @@ def build_table(samples: list, completed_metric: str, failed_metric: str) -> str
 def main():
     args     = parse_args()
     pair_ids = set(args.pairs.split()) if args.pairs.strip() else None
+    if pair_ids is None:
+        sys.exit("ERROR: --pairs was empty; refusing to report on all samples in tso_outdir")
 
     # Check for expected pair IDs with no metrics file
     missing = []
