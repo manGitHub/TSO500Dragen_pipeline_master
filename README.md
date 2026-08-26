@@ -91,6 +91,29 @@ Profile selection is automatic: `submit_pipeline.sh` uses the `biowulf` profile 
 
 ---
 
+## Re-running After a Failure or Stub Run
+
+Before re-submitting a run — whether recovering from a failed run or following up a `-stub` dry run — clean up stale outputs so the pipeline doesn't pick up incomplete or outdated results via `-resume`:
+
+- **Delete/rename TSO output folders for any samples that need to be rerun:**
+  ```
+  …/tso_outdir/<pair_id>
+  ```
+
+- **If Demux needs to be rerun, delete/rename the demux output directory for the RUNFOLDER:**
+  ```
+  …/demux_outdir/<RUNFOLDER>
+  ```
+
+- **If the entire run needs to be repeated, first delete/rename the work directory for the RUNFOLDER:**
+  ```
+  …/work/<RUNFOLDER>
+  ```
+
+The pipeline will still use `-resume`, so only the missing samples will be run if necessary.
+
+---
+
 ## Key Parameters
 
 All parameters are set in `nextflow.config` and can be overridden on the command line with `--param value`.
