@@ -100,7 +100,7 @@ Before re-submitting a run — whether recovering from a failed run or following
   …/tso_outdir/<pair_id>
   ```
 
-- **Delete the Nextflow work directories for any samples that failed and need to be rerun.** Find them by grepping the sample name in the run's trace file:
+- **Delete the Nextflow work directories for any samples that need to be rerun.** Find them by grepping the sample name in the run's trace file:
   ```
   $ grep <pair_id> …/pipeline_info/<run>_<timestamp>_trace.txt
   2	d2/73414e	27186831	TSO500 (<pair_id>)	CACHED	0	2026-08-12 10:45:38.860	29m 59s	28m 3s	508.9%	98.2 GB	352.1 GB	100.4 GB	13.9 GB
