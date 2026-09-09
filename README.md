@@ -100,6 +100,18 @@ Before re-submitting a run — whether recovering from a failed run or following
   …/tso_outdir/<pair_id>
   ```
 
+- **Delete the Nextflow work directories for any samples that failed and need to be rerun.** Find them by grepping the sample name in the run's trace file:
+  ```
+  $ grep <pair_id> …/pipeline_info/<run>_<timestamp>_trace.txt
+  2	d2/73414e	27186831	TSO500 (<pair_id>)	CACHED	0	2026-08-12 10:45:38.860	29m 59s	28m 3s	508.9%	98.2 GB	352.1 GB	100.4 GB	13.9 GB
+  8	1c/fdd72d	27188305	QCI_ZIP (<pair_id>)	CACHED	0	2026-08-12 11:15:38.667	1m 59s	240ms	52.5%	11.8 MB	36.2 MB	4.5 MB	1.8 MB
+  7	52/d49bd2	28028152	VAF_SCATTER_HTML (<pair_id>)	CACHED	0	2026-08-21 11:12:48.517	1m 58s	2.7s	60.1%	58.9 MB	260.8 MB	35.8 MB	4.8 MB
+  ```
+  The second column (e.g. `d2/73414e`) is the short work-directory hash for that process. Delete the corresponding work directory for each matching line:
+  ```
+  rm -r …/work/<RUNFOLDER>/d2/73414e
+  ```
+
 - **If Demux needs to be rerun, delete/rename the demux output directory for the RUNFOLDER:**
   ```
   …/demux_outdir/<RUNFOLDER>
