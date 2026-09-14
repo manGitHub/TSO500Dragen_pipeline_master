@@ -77,7 +77,7 @@ To run the pipeline with output directed to your own working directory instead o
 
 The pipeline always runs with `-resume` enabled, so re-submitting the same run folder will pick up from cached work where possible.
 
-### Stub / dry run
+### Stub run - for error resolution
 
 To run in stub mode (uses existing metrics files to determine what needs to be rerun, without executing DRAGEN):
 
@@ -93,7 +93,7 @@ Profile selection is automatic: `submit_pipeline.sh` uses the `biowulf` profile 
 
 ## Re-running After a Failure or Stub Run
 
-Before re-submitting a run — whether recovering from a failed run or following up a `-stub` dry run — clean up stale outputs so the pipeline doesn't pick up incomplete or outdated results via `-resume`:
+Before re-submitting a run — whether recovering from a failed run or following up a `-stub` run — clean up stale outputs so the pipeline doesn't pick up incomplete or outdated results via `-resume`:
 
 - **Delete/rename TSO output folders for any samples that need to be rerun:**
   ```
@@ -117,7 +117,7 @@ Before re-submitting a run — whether recovering from a failed run or following
   …/demux_outdir/<RUNFOLDER>
   ```
 
-- **If the entire run needs to be repeated, first delete/rename the work directory for the RUNFOLDER:**
+- **If Demux or the entire run needs to be repeated, delete/rename the work directory for the RUNFOLDER:**
   ```
   …/work/<RUNFOLDER>
   ```
