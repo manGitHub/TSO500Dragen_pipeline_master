@@ -11,7 +11,9 @@ This pipeline automates the following steps for a given sequencing run:
 1. **Demultiplexing** — Parses the run's `SampleSheet.csv`, runs DRAGEN demux-only, and stages FASTQs to a shared output directory.
 2. **TSO500 Analysis** — Runs DRAGEN TSO500 per sample (fanned out in parallel), validating that each sample reaches `COMPLETED_ALL_STEPS`.
 3. **QCI Zip** — Packages per-sample result files (`CombinedVariantOutput.tsv`, `.cnv.vcf`, `.hard-filtered.vcf`) into a zip for downstream use, patching the `##reference=` header in the VCFs to point at the DRAGEN hg19 reference path.
-4. **QC & Reporting** — On completion, generates a metrics summary table, an MSI/TMB/HRD/Tumor Purity Excel workbook, a demux summary CSV, and a merged QC Excel file, all attached to a completion email.
+4. **Exon Annotation** — Matches each exon coverage row to the configured BED by exact `chr`, `start`, and `end`, removes `gene`, and writes the BED exon name immediately after `end`.
+5. **VAF Scatter HTML** — Builds an interactive per-sample Bokeh plot from the TMB trace with variant-status filtering, hover details, and optional chromosome boundaries.
+6. **QC & Reporting** — On completion, generates a metrics summary table, an MSI/TMB/HRD/Tumor Purity Excel workbook, a demux summary CSV, and a merged QC Excel file, all attached to a completion email.
 
 ---
 
@@ -22,6 +24,7 @@ This pipeline automates the following steps for a given sequencing run:
 - SLURM (Biowulf `norm` and `nci-dragen`/`nci-lp-dragen` partitions)
 - DRAGEN 3.11.2 (`/opt/dragen/3.11.2/bin`)
 - Python 3 with: `pandas`, `openpyxl`
+- Shared groupmamba environments: `base` for exon annotation and `tsov2-vaf_scatter` with Bokeh for VAF scatter HTML
 
 ---
 
@@ -36,9 +39,13 @@ NextFlow/
 ├── modules/
 │   ├── demux.nf             # DEMUX process
 │   ├── tso500.nf            # TSO500 process
-│   └── qci_zip.nf           # QCI_ZIP process
+│   ├── qci_zip.nf           # QCI_ZIP process
+│   ├── add_exon_names.nf    # ADD_EXON_NAMES process
+│   └── vaf_scatter.nf       # VAF_SCATTER_HTML process
 ├── scripts/
 │   ├── samplesheet.py       # Parses SampleSheet.csv → sample_ids.txt, pair_ids.txt
+│   ├── add_exon_names.py    # Replaces gene with an exact-coordinate exon name
+│   ├── vaf_scatter_html.py  # Builds interactive per-sample VAF scatter HTML
 │   ├── qc_email.py          # Builds per-sample [Analysis Status] metrics table
 │   ├── msi_tmb_hrd_table.py # Scrapes MSI, TMB, HRD, tumor purity values → Excel
 │   ├── merge_TSO500_QC.py   # Merges MetricsOutput.tsv files + run QC JSON → Excel
@@ -85,7 +92,7 @@ To run in stub mode (uses existing metrics files to determine what needs to be r
 /path/to/run.sh <RUNFOLDER> -stub
 ```
 
-In stub mode, `TSO500` checks each sample's existing `MetricsOutput.tsv` for `COMPLETED_ALL_STEPS`. Samples missing a metrics file or missing that status are logged to `pipeline_info/stubs/incomplete_samples_<timestamp>.txt` and flagged with a `NEEDS_RUN` marker instead of failing the run.
+In stub mode, `TSO500` checks each sample's existing `MetricsOutput.tsv` for `COMPLETED_ALL_STEPS`. Samples missing a metrics file or missing that status are logged to `pipeline_info/stubs/incomplete_samples_<timestamp>.txt` and flagged with a `NEEDS_RUN` marker instead of failing the run. `ADD_EXON_NAMES` and `VAF_SCATTER_HTML` create representative stub outputs without reading the real exon coverage or TMB trace files.
 
 Profile selection is automatic: `submit_pipeline.sh` uses the `biowulf` profile by default, and switches to the `stub` profile only when `-stub` is passed. Any `-profile <value>` passed directly to `run.sh` is ignored, since profile selection is controlled internally.
 
@@ -130,19 +137,23 @@ The pipeline will still use `-resume`, so only the missing samples will be run i
 
 All parameters are set in `nextflow.config` and can be overridden on the command line with `--param value`.
 
-| Parameter            | Default                                      | Description                                      |
-|----------------------|----------------------------------------------|--------------------------------------------------|
-| `run_folder`         | *(required)*                                 | Sequencing run folder name                       |
-| `launch_dir`         | *(set by run.sh)*                            | Directory the pipeline was launched from         |
-| `pipeline`           | `4.0`                                        | Workflow version number reported in emails       |
-| `run_base`           | `/data/Compass/NextSeq_raw`                  | Root directory containing run folders            |
-| `fastq_outdir`       | `…/FastqFolder`                              | Destination for demuxed FASTQs                   |
-| `demux_outdir`       | `…/TSO500_DRAGEN_Demux`                      | Destination for DRAGEN demux output              |
-| `tso_outdir`         | `…/TSO500_Results`                           | Destination for TSO500 per-sample results        |
-| `dragen_bin`         | `/opt/dragen/3.11.2/bin`                     | Path to DRAGEN binaries                          |
-| `email_from`         | `$USER@nih.gov`                              | Sender address for pipeline notifications        |
-| `email_to`           | *(set in nextflow.config)*                   | Recipient address for pipeline notifications     |
-| `partition`          | `nci-dragen,nci-lp-dragen`                   | SLURM partition(s) for DEMUX and TSO500 jobs     |
+| Parameter                | Default                                      | Description                                      |
+|--------------------------|----------------------------------------------|--------------------------------------------------|
+| `run_folder`             | *(required)*                                 | Sequencing run folder name                       |
+| `launch_dir`             | *(set by run.sh)*                            | Directory the pipeline was launched from         |
+| `pipeline`               | `4.0`                                        | Workflow version number reported in emails       |
+| `run_base`               | `/data/Compass/NextSeq_raw`                  | Root directory containing run folders            |
+| `fastq_outdir`           | `…/FastqFolder`                              | Destination for demuxed FASTQs                   |
+| `demux_outdir`           | `…/TSO500_DRAGEN_Demux`                      | Destination for DRAGEN demux output              |
+| `tso_outdir`             | `…/TSO500_Results`                           | Destination for TSO500 per-sample results        |
+| `dragen_bin`             | `/opt/dragen/3.11.2/bin`                     | Path to DRAGEN binaries                          |
+| `exon_cov_report_env`    | `base`                                       | Groupmamba environment for exon annotation       |
+| `exon_bed`               | `…/TST500C_Custom_manifest.exon.bed`         | Exact-coordinate exon-name mapping               |
+| `vaf_scatter_script`     | `scripts/vaf_scatter_html.py`                | VAF scatter HTML generator                       |
+| `exon_cov_report_script` | `scripts/add_exon_names.py`                  | Exon annotation script                           |
+| `email_from`             | `$USER@nih.gov`                              | Sender address for pipeline notifications        |
+| `email_to`               | *(set in nextflow.config)*                   | Recipient address for pipeline notifications     |
+| `partition`              | `nci-dragen,nci-lp-dragen`                   | SLURM partition(s) for DEMUX and TSO500 jobs     |
 
 ---
 
@@ -162,6 +173,8 @@ All parameters are set in `nextflow.config` and can be overridden on the command
 | File | Description |
 |------|-------------|
 | `<pair_id>.zip` | Zipped variant outputs: `CombinedVariantOutput.tsv`, `.cnv.vcf`, `.hard-filtered.vcf` |
+| `<pair_id>/<sample_id>/<sample_id>.exon_cov_report2.tsv` | Exon-level coverage report |
+| `<pair_id>/<sample_id>/<sample_id>_variant_scatter.html` | Interactive VAF scatter plot |
 | `<run>_<pair_id>_TSO500v2.6.2.done` | Marker file dropped on pipeline completion |
 
 ### Metadata (under `metadata/<run>/`)

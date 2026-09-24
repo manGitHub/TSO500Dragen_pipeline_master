@@ -12,11 +12,14 @@ include { DEMUX   } from './modules/demux'
 include { TSO500  } from './modules/tso500'
 include { QCI_ZIP } from './modules/qci_zip'
 include { VAF_SCATTER_HTML } from './modules/vaf_scatter'
+include { ADD_EXON_NAMES } from './modules/add_exon_names'
 
 // ── Shared paths/values ───────────────────────────────────────────────────────
 def pipelineVersion = workflow.manifest.version
 def runDir             = "${params.run_base}/${params.run_folder}"
 def vafScatterScript = params.vaf_scatter_script
+def exonBed          = file(params.exon_bed)
+def exonCovReportScript = params.exon_cov_report_script
 
 
 // ── Workflow ──────────────────────────────────────────────────────────────────
@@ -53,6 +56,16 @@ workflow {
         sample_ch,						// each sample tuple and pipeline dirs
         channel.value(params.fastq_outdir),
         channel.value(params.tso_outdir)
+    )
+
+    ADD_EXON_NAMES(
+        TSO500.out.tso_output
+            .map { sample_id, tso_dir ->
+                def pair_id = tso_dir.tokenize('/').last()
+                tuple(sample_id, pair_id, tso_dir)
+            },
+        channel.value(exonBed),
+        channel.value(exonCovReportScript)
     )
 
     VAF_SCATTER_HTML(
